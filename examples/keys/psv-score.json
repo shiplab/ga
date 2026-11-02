@@ -1,0 +1,80 @@
+{
+ "key": "psv",
+ "compartments": [
+  208,
+  229
+ ],
+ "named": [
+  25,
+  26
+ ],
+ "details": [
+  82,
+  112
+ ],
+ "views": {
+  "Profile": [
+   31,
+   38
+  ],
+  "Main deck": [
+   61,
+   61
+  ],
+  "Tank deck": [
+   54,
+   66
+  ],
+  "Tank top": [
+   62,
+   64
+  ]
+ },
+ "particulars": [
+  [
+   "loa",
+   92,
+   92,
+   true
+  ],
+  [
+   "lbp",
+   85,
+   85,
+   true
+  ],
+  [
+   "beam",
+   20,
+   20,
+   true
+  ],
+  [
+   "depth",
+   8.2,
+   8.2,
+   true
+  ],
+  [
+   "draught",
+   6.2,
+   6.2,
+   true
+  ],
+  [
+   "dwt",
+   4900,
+   4900,
+   true
+  ],
+  [
+   "speed",
+   14.5,
+   14.5,
+   true
+  ]
+ ],
+ "missedNamed": [
+  "Tank top: FW"
+ ]
+}

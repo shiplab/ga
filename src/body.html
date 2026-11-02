@@ -1,0 +1,148 @@
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <img class="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAMAAAANIilAAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAcVQTFRFEkmQM2KfOmei7fD1TXarRXCnFUuRE0qQvMres8TaFEqR2eHrQGyl9/f5U3quFkySMWGeF02S3ePt7vH1Z4q309zpS3Wqrb/Xk6vLTHWrp7vVscLZUHis7O/0r8DYtsbbMGCeQ26mPWqkvszf+fn6HlKWIlWXVXyvGE2TrL7XKVubI1aYGE6T9fb4aIq3iqTHssPaqbzVf5zCjabIw9Dh2+LsJ1ma2ODrMmKf5erxt8fccpK8kKnKcZG8rsDYztjm8fP2fJrBOGahmK/NOWai8PL2+Pj6Klub6+/0u8neP2ulN2WhUXmtmrHP+/v79vb5e5nAiaTHNGOg4efvGU+T19/rzNfmlKzMhqHFjKbIL1+etcXb4ujwVn2v6u3znbPQbI661t/q5+vyGk+UIFSWJliZZIe2O2ijWoCxc5O8dpa+3+XuYIW0hKDFwc7g7/H2gp7DXoOzbY66iKPG6Ozy1d7qVHyuLV2cla3MO2mjnrTQ5OnxvMveK1ybTnesKFqah6LGXIGyR3KpJViZSHKpH1OWY4e1HVGV3uTu9PX4IVSXJFaYSXOpbo+64ObvepjAq77WydXkG1CUws/hxtLj8vT3/fz8Kjkk2wAAAJd0Uk5T////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////APGfmBMAAAIySURBVHjanNf1VyMxEAfwoRQoLfX2WqhRwd3d3Tl3g/ODU+Tc3bH8vRRpu1k2e5P5/tK3efm83bdNZjbAUvlT1PVmypGlG8fttcbIeJrA4W/b31ZA5vnMDo+fVYJECl4pcM0tkEv1+TT+/h6k8y6FHwMhQwd4iGIhd2MPu6pIGD7t4QEgJsCg4wcVl41CEdWC/TT8JuPkfQvpuAum6NgGxdx1+WDMIMzkBR4fgyzuevBlTShbkJC1N4+bXKjCsQTTicnMTTaq8HAoM9US9tc1XY33Z0bq83SxIftwXsJn+7g/cspxry2F83H4eplisNRvlcG9Jfx7Da7gsc+u/kt/ubF4tfzogvAg8axNazlFcDisXTGtKCzYKvkYbCnRxtcwuEJU6WcR2C/AYx3/xW72SICrvIg7nxPgnxYEnhHg4hEENtm1cRDzth++1sbHUYukR7s3eVG4ZVELP0HuqjoNe9OFxKPTR3EDuhhcKlDbbokytHCHG20NSxVA5oulx5w9LrnqyVj/v1rD2xul68blMwxZeofHFQ3Cer/Pe0XZMQL6eFKv27Atdbtp567bOx9MmASZ2O42q7ok32LBbM8VxmlWt1gDvblfBhsdD8A8HdfDRbL9fBJGHFRcm/x8PEu0zuYkdp+g4S/7n8wRkq38dvCx/pTy0PHUGaNR2lYHMqebpk05O9apPBo1f5CxSxb+UJZoCCLlV09cfaJjbK7vhccYjeboJJozfbeiJbO/dwUYAFCQMQDgUCeVAAAAAElFTkSuQmCC" alt="NTNU" width="30" height="30">
+      <span>GA to DBB</span>
+    </div>
+    <input id="projName" class="projname" type="text" aria-label="Project name" spellcheck="false" placeholder="Project name">
+    <div class="spacer"></div>
+    <button class="btn" id="btnOpen" title="Open a general arrangement: a PDF (best: one page of drawing, optionally one page of particulars), a DXF or SVG drawing, or a picture (JPG, PNG, WebP)">Open GA</button>
+    <button class="btn" id="btnExamples" title="Open one of the example GAs (PSV, river cruise ship, tanker), copyright free, made for teaching">Examples</button>
+    <input type="file" id="fileIn" accept=".pdf,application/pdf,.dxf,.svg,image/svg+xml,.jpg,.jpeg,.png,.webp,image/*" hidden>
+    <span class="sep"></span>
+    <div class="seg" role="group" aria-label="Undo and redo">
+      <button class="btn" id="btnUndo" title="Undo (Ctrl+Z)" disabled>Undo</button>
+      <button class="btn" id="btnRedo" title="Redo (Ctrl+Shift+Z or Ctrl+Y)" disabled>Redo</button>
+    </div>
+    <span class="sep"></span>
+    <div class="seg" role="group" aria-label="Turn the drawing">
+      <button class="btn" id="btnRotL" title="Turn the drawing a quarter turn anticlockwise" disabled>&#8634; Turn</button>
+      <button class="btn" id="btnRotR" title="Turn the drawing a quarter turn clockwise" disabled>Turn &#8635;</button>
+    </div>
+    <span class="sep"></span>
+    <button class="btn" id="btnHelp" title="How to use this app">How to</button>
+    <span class="sep"></span>
+    <button class="btn" id="btnStl" title="Save the ticked blocks and the hull as an STL file (a solid model, in metres)" disabled>STL</button>
+    <button class="btn" id="btnPdf" title="Save a report (PDF): ship data, the drawing with the blocks on it, and the blocks table with volumes" disabled>Report PDF</button>
+    <button class="btn" id="btnCsv" title="Save the blocks as a table (CSV)" disabled>Blocks CSV</button>
+    <button class="btn primary" id="btnSave" title="Save a DBB project (.json) with the ticked blocks and a hull" disabled>Save DBB file</button>
+  </header>
+  <main class="main">
+    <aside class="panel left" aria-label="Document" id="leftPanel">
+      <div class="guide" id="guide" hidden></div>
+      <div class="ph">Document</div>
+      <div class="props">
+        <label class="f"><span>Drawing page</span><select id="selGa" aria-label="Page with the drawing"></select><span></span></label>
+        <label class="f"><span>Particulars</span><select id="selInfo" aria-label="Page with the ship particulars"></select><span></span></label>
+        <div class="rescan"><button class="btn sm" id="btnRescan" title="Read the drawing page again from scratch: turn, views, view roles and scale. Use it if the app chose the wrong page or found the views wrongly. Undo brings back the old views" disabled>Re-scan drawing</button></div>
+        <div class="engine"><label for="selEngine">Engine</label><select id="selEngine" title="How a PDF drawing is read. Compartments: every enclosed area of every titled view (plans and profile) becomes a block, named by the label inside it. OpenCV: image analysis of the page (views, bulkheads, levels, tanks, ballast, ends, hull), with the lines of the PDF as the fallback. Lines: only the lines of the PDF."><option value="auto">Compartments, else OpenCV</option><option value="ocv">OpenCV, else lines</option><option value="lines">Lines of the PDF only</option></select><p class="note" id="engineNote"></p></div>
+      </div>
+      <p class="note" id="docNote"></p>
+      <div class="banner" id="docWarn" hidden></div>
+      <div class="ph sec">Ship data <button class="btn sm" id="btnRegion" title="Drag a rectangle around a table or a note with the main dimensions, and read only that part by OCR, on this computer">Read part</button> <button class="btn sm" id="btnOcr" title="Read the text of the drawing by OCR, on this computer. Use it when the sheet has no real text.">Read text (OCR)</button></div>
+      <div class="banner" id="loaNote" hidden></div>
+      <div class="props" id="infoForm"></div>
+      <p class="note" id="infoNote"></p>
+      <div class="ph sec">Views in the drawing</div>
+      <div class="props" id="viewList"></div>
+      <div class="ph sec">Scale</div>
+      <dl class="readout" id="scaleOut"></dl>
+      <p class="note" id="scaleNote"></p>
+      <div class="ph sec">Hull</div>
+      <div class="props"><label class="f"><span>Hull in file</span><select id="selHull" aria-label="Hull to save in the DBB file"><option value="preset">Preset shape</option><option value="guess">Guess from drawing</option><option value="contour">From contours (Edit hull)</option><option value="none">None</option></select><span></span></label></div>
+      <p class="note" id="hullNote"></p>
+    </aside>
+    <div class="split v" id="splitH" role="separator" aria-orientation="vertical" tabindex="0" title="Drag to resize the left panel. Double-click to reset."></div>
+    <section class="center" aria-label="Drawing and tables">
+      <div class="vtools">
+        <span class="seg" role="group" aria-label="What to edit">
+          <button class="btn on" id="modeBlocks" aria-pressed="true" title="Edit the blocks">Edit blocks</button>
+          <button class="btn" id="modeViews" aria-pressed="false" title="Fix the views: select a view box, drag it, drag its edges to resize it, add or delete one">Edit views</button>
+          <button class="btn" id="modeScale" aria-pressed="false" title="Set the scale of the drawing by clicking: the ends of the hull, the deck line and the hull width. For pictures and for sheets where the views are not found.">Set scale</button>
+          <button class="btn" id="modeHull" aria-pressed="false" title="Edit the hull: its plan, profile and midship section">Edit hull</button>
+        </span>
+        <span class="sep"></span>
+        <span class="seg" id="ovSeg" role="group" aria-label="Overlays">
+          <button class="btn on" data-ov="views" aria-pressed="true" title="Outline of each view">Views</button>
+          <button class="btn on" data-ov="bulk" aria-pressed="true" title="Show or hide the orange lines where full-depth bulkheads were found in the profile. Display only: it changes nothing in the file you save">Bulkhead lines</button>
+          <button class="btn on" data-ov="lev" aria-pressed="true" title="Horizontal levels found in the profile">Levels</button>
+          <button class="btn on" data-ov="blk" aria-pressed="true" title="The ticked blocks, drawn over the drawing">Blocks</button>
+        </span>
+        <span id="vwTools" hidden><button class="btn" id="vwAdd" aria-pressed="false" title="Drag a rectangle on the drawing to make a new view">+ View</button> <button class="btn" id="vwDel" title="Delete the selected view (Delete key)">Delete view</button> <button class="btn" id="vwTidy" title="Shrink the selected view to the lines inside it">Fit to lines</button> <button class="btn" id="vwReset" title="Find the views again: for a picture the app looks for the empty bands between the views, for a drawing it repeats the first search">Find views</button></span>
+        <button class="btn" id="btnDraw" data-bl="1" aria-pressed="false" title="Drag a rectangle on a plan or on the profile to make a block there">Draw block</button>
+        <button class="btn" id="btnFind" data-bl="1" aria-pressed="false" title="Drag a rectangle around the tanks of a plan: the app looks for the bulkhead lines inside it and proposes one block per cell">Find blocks in area</button>
+        <div class="spacer"></div>
+        <button class="btn" id="btnFocus" aria-pressed="false" title="Give the drawing the whole window: hides the left panel and the tables (Esc to go back)">Expand</button>
+        <select class="btn" id="selGoView" aria-label="Go to a view" title="Zoom to one of the views found (the profile, a plan, a deck): the same as Fit, for that view"><option value="">Go to view…</option></select>
+        <button class="btn" id="btnCvSet" aria-expanded="false" title="OpenCV settings: how the lines are read (darkness, gaps, marks, smallest compartment, text). Also in the bar of Find blocks.">OpenCV settings</button>
+        <button class="btn" id="btnFit" title="Fit the drawing in the window (F)">Fit</button>
+        <button class="btn" id="btnZin" title="Zoom in">+</button>
+        <button class="btn" id="btnZout" title="Zoom out">&minus;</button>
+      </div>
+      <div class="viewport" id="viewport">
+        <canvas id="cv" aria-label="The drawing, turned upright, with the suggestions drawn over it"></canvas>
+        <div class="empty" id="empty">
+          <h2>Open a general arrangement</h2>
+          <p>Drop a file here, or press Open GA. It can be a PDF, a DXF or SVG drawing, or a picture (JPG, PNG). The app reads the particulars, finds the views, and suggests decks, bulkheads and tank blocks from the lines of the drawing. You check each suggestion, then save a file for the DBB editor.</p>
+          <p>It works best on vector drawings. Everything stays in this page.</p>
+          <div><button class="btn primary" id="btnOpen2">Open GA</button></div>
+        </div>
+        <div class="fndbar" id="fndBar" hidden><span id="fndTxt"></span> <button class="btn primary" id="fndOk">Add them</button> <button class="btn" id="fndNo">Cancel</button> <button class="btn" id="fndSet" aria-expanded="false" title="How OpenCV reads the lines: darkness, gaps, marks, smallest compartment, text">Settings</button></div>
+        <div class="cvpanel" id="cvPanel" hidden><div class="cvhead"><b>OpenCV settings</b> <span>how the lines of a picture or a view are read</span><button class="vbclose" id="cvClose" aria-label="Close settings" title="Close">×</button></div><div class="cvset" id="cvSet"></div><div class="cvfoot" id="cvFoot"></div></div>
+        <div class="hud" id="hud" hidden></div>
+        <div class="calmsg" id="calMsg" hidden></div>
+        <div class="calmini" id="calMini" hidden></div>
+        <div class="viewbar" id="viewBar" hidden></div>
+        <div class="ocrbar" id="ocrBar" role="status" aria-live="polite" hidden><div class="ocrtxt"><span class="spin" aria-hidden="true"></span><span id="ocrTxt"></span></div><div class="track"><div class="fill" id="ocrFill"></div></div></div>
+      </div>
+      <div class="split h" id="splitV" role="separator" aria-orientation="horizontal" tabindex="0" title="Drag to resize the drawing and the tables. Double-click to hide or show the tables. Arrow keys also work."></div>
+      <div class="drawer" id="drawer">
+        <div class="drawer-head">
+          <div class="tabs" role="tablist">
+            <button class="tab" role="tab" data-tab="blocks" data-bl="1" aria-selected="true">Blocks <span class="badge" id="bdgBlocks">0</span></button>
+            <button class="tab" role="tab" data-tab="levels" data-bl="1" aria-selected="false">Levels <span class="badge" id="bdgLevels">0</span></button>
+            <button class="tab" role="tab" data-tab="hull" data-hl="1" aria-selected="false" hidden>Hull contours</button>
+            <button class="tab" role="tab" data-tab="d3" aria-selected="false">3D</button>
+            <button class="tab" role="tab" data-tab="checks" aria-selected="false">Checks</button>
+          </div>
+        </div>
+        <div class="drawer-body">
+          <div id="tab-blocks" role="tabpanel">
+            <div class="subbar"><span id="blkSum"></span><span class="spacer"></span><button class="btn sm" id="btnAddRow" title="Add an empty block to the list">+ Block</button></div>
+            <div class="shapebar" id="shapeLib" role="group" aria-label="Shape library"></div>
+            <div class="tblwrap"><table class="tbl" id="blkTbl"></table></div>
+          </div>
+          <div id="tab-hull" role="tabpanel" hidden>
+            <div class="subbar">
+              <span class="seg" id="hcSel" role="group" aria-label="Contour">
+                <button class="btn on" data-c="plan" title="Half of the deck outline seen from above: half-breadth along the length">Plan</button>
+                <button class="btn" data-c="keel" title="The keel line in the profile: height above the baseline along the length">Keel</button>
+                <button class="btn" data-c="deck" title="The deck edge in the profile: height above the baseline along the length">Sheer</button>
+                <button class="btn" data-c="section" title="Half of the midship section: half-width against height">Section</button>
+              </span>
+              <button class="btn" id="hcPick" aria-pressed="false" title="Click points on the drawing">Click on drawing</button>
+              <button class="btn" id="hcFill" title="Fill all contours from what the app read in the drawing">Fill from drawing</button>
+              <button class="btn" id="hcClear" title="Remove the points of this contour">Clear</button>
+              <span class="spacer"></span><span id="hcSum"></span>
+            </div>
+            <div class="tblwrap"><table class="tbl" id="hcTbl"></table></div>
+          </div>
+          <div id="tab-d3" role="tabpanel" hidden>
+            <div class="subbar" id="d3opts"><label class="check"><input type="checkbox" data-o="hull"> Hull</label><label class="check"><input type="checkbox" data-o="blocks"> Blocks</label><label class="check" title="Stations, waterlines and the deck edge"><input type="checkbox" data-o="lines"> Lines</label><label class="check" title="Every station and waterline of the hull"><input type="checkbox" data-o="mesh"> Mesh</label><label class="check" title="Filled and shaded surfaces"><input type="checkbox" data-o="solid"> Solid</label><label class="check" id="d3clearL" title="See the blocks through the hull"><input type="checkbox" data-o="clear"> Transparent</label><label class="check"><input type="checkbox" data-o="water"> Waterline</label><span class="spacer"></span><span class="seg" id="d3views" role="group" aria-label="View"><button class="btn sm" data-v="side">Side</button><button class="btn sm" data-v="top">Top</button><button class="btn sm" data-v="front">Front</button><button class="btn sm" data-v="iso">3D</button></span><button class="btn sm" id="d3Reset">Fit view</button></div>
+            <div class="note" style="padding:2px 8px">Drag to turn, wheel to zoom.</div>
+            <div class="d3wrap"><canvas id="d3cv" aria-label="3D preview of the hull and blocks"></canvas></div>
+          </div>
+          <div id="tab-levels" role="tabpanel" hidden>
+            <div class="subbar">Levels are the horizontal lines of the profile, in metres above the baseline. Tick the decks of the superstructure: a block is made between each tick and the next, and from the main deck up to the first.</div>
+            <div class="tblwrap"><table class="tbl" id="levTbl"></table></div>
+          </div>
+          <div id="tab-checks" role="tabpanel" hidden>
+            <div class="subbar">Checks against the particulars. The drawing is low resolution, so small differences are normal.</div>
+            <ul class="issues" id="chkList"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>

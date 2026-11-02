@@ -1,0 +1,26 @@
+{
+  "name": "ga-to-dbb",
+  "version": "1.0.0",
+  "description": "GA to DBB: from a ship general arrangement drawing (PDF, DXF, SVG or picture) to a Ship Design Building Block project. Runs in the browser, offline.",
+  "scripts": {
+    "build": "node build.js",
+    "pages": "node build.js --pages"
+  },
+  "keywords": [],
+  "author": "Henrique Gaspar, NTNU",
+  "dependencies": {
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "pdfjs-dist": "^3.11.174",
+    "tesseract.js": "^5.1.1",
+    "tesseract.js-core": "^5.1.1",
+    "@techstark/opencv-js": "5.0.0-release.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shiplab/ga"
+  },
+  "homepage": "https://shiplab.github.io/ga/"
+}

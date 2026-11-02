@@ -1,0 +1,151 @@
+{
+ "key": "tanker",
+ "compartments": [
+  0,
+  273
+ ],
+ "named": [
+  0,
+  48
+ ],
+ "details": [
+  0,
+  95
+ ],
+ "views": {
+  "Profile": [
+   0,
+   73
+  ],
+  "Upper deck": [
+   0,
+   131
+  ],
+  "Tank top": [
+   0,
+   56
+  ],
+  "Midship section": [
+   0,
+   13
+  ]
+ },
+ "particulars": [
+  [
+   "loa",
+   250,
+   250,
+   true
+  ],
+  [
+   "lbp",
+   240,
+   240,
+   true
+  ],
+  [
+   "beam",
+   44,
+   44,
+   true
+  ],
+  [
+   "depth",
+   21.4,
+   21.4,
+   true
+  ],
+  [
+   "draughtDesign",
+   13.5,
+   13.5,
+   true
+  ],
+  [
+   "draught",
+   15.0,
+   15,
+   true
+  ],
+  [
+   "dwt",
+   115000,
+   115000,
+   true
+  ],
+  [
+   "cargoVol",
+   122000,
+   122000,
+   true
+  ],
+  [
+   "speed",
+   14.5,
+   14.5,
+   true
+  ],
+  [
+   "cargoTanks",
+   12,
+   12,
+   true
+  ],
+  [
+   "slopTanks",
+   2,
+   2,
+   true
+  ]
+ ],
+ "missedNamed": [
+  "Profile: FORE PEAK / TANK / B.T.",
+  "Profile: NO.1 COT(P/S) / NO.1 WBT(P/S)",
+  "Profile: NO.2 COT(P/S) / NO.2 WBT(P/S)",
+  "Profile: NO.3 COT(P/S) / NO.3 WBT(P/S)",
+  "Profile: NO.4 COT(P/S) / NO.4 WBT(P/S)",
+  "Profile: NO.5 COT(P/S) / NO.5 WBT(P/S)",
+  "Profile: NO.6 COT(P/S) / NO.6 WBT(P/S)",
+  "Profile: SLOP / (P/S)",
+  "Profile: PUMP ROOM",
+  "Profile: ENGINE ROOM",
+  "Profile: STEERING / GEAR ROOM",
+  "Tank top: FORE PEAK / TANK",
+  "Tank top: BOW THR.",
+  "Tank top: NO.1 WBT(P)",
+  "Tank top: NO.1 COT(P)",
+  "Tank top: NO.1 COT(S)",
+  "Tank top: NO.1 WBT(S)",
+  "Tank top: NO.2 WBT(P)",
+  "Tank top: NO.2 COT(P)",
+  "Tank top: NO.2 COT(S)",
+  "Tank top: NO.2 WBT(S)",
+  "Tank top: NO.3 WBT(P)",
+  "Tank top: NO.3 COT(P)",
+  "Tank top: NO.3 COT(S)",
+  "Tank top: NO.3 WBT(S)",
+  "Tank top: NO.4 WBT(P)",
+  "Tank top: NO.4 COT(P)",
+  "Tank top: NO.4 COT(S)",
+  "Tank top: NO.4 WBT(S)",
+  "Tank top: NO.5 WBT(P)",
+  "Tank top: NO.5 COT(P)",
+  "Tank top: NO.5 COT(S)",
+  "Tank top: NO.5 WBT(S)",
+  "Tank top: NO.6 WBT(P)",
+  "Tank top: NO.6 COT(P)",
+  "Tank top: NO.6 COT(S)",
+  "Tank top: NO.6 WBT(S)",
+  "Tank top: SLOP WBT(P) / SLOP WBT(S) / STEERING / GEAR ROOM",
+  "Tank top: SLOP(P)",
+  "Tank top: SLOP(S)",
+  "Tank top: PUMP ROOM / PUMP ROOM",
+  "Tank top: ENGINE ROOM",
+  "Midship section: NO.1 WBT(S)",
+  "Midship section: NO.1 COT(S)",
+  "Midship section: D.B. WBT",
+  "Midship section: NO.1 COT(P)",
+  "Midship section: D.B. WBT",
+  "Midship section: NO.1 WBT(P)"
+ ]
+}
