@@ -257,15 +257,26 @@ Each view keeps its own frame, and *Draw block* and *Find blocks in this view* u
 - A profile compartment that a plan block already describes is dropped (intersection over union ≥ 0.5 in x–z). The others get a width of **B/2, centred** (marked *width assumed*).
 - A **double bottom** block is added under each compartment of the lowest plan when that plan stands 1 m or more above the baseline.
 
-## The hull from the deck plans
+## The hull from the deck plans and the profile
+
+The plans give the breadth of the hull; the profile gives its ends and its bottom.
 
 1. **Deck outlines.** For each plan height k, the half-breadth b_k(x) at 41 stations is the largest |y| of the blocks of that plan covering x. A station between two blocks takes the mean of its neighbours.
 2. **Beam check.** The outlines are scaled so that the widest point of the highest plan below the depth equals B/2. This is done only when the factor is between 0.7 and 1.4; otherwise the guess is not used.
 3. **Waterplane shape.** The highest outline is made to fall monotonically forward and aft of the parallel body (the stations within 97% of the maximum). It is then smoothed with weights (1, 2, 1)/4, and the stem ends at 2% of B.
-4. **Between decks**, linear interpolation: y(x, z) = b_k + (z − z_k)/(z_(k+1) − z_k) × (b_(k+1) − b_k).
-5. **Under the lowest deck**, a round bilge of radius r = min(0.06 B, 0.9 b) on the half-breadth b of that deck: y(h) = (b − r) + sqrt(r² − (r − h)²) for h < r, and y = b above.
-6. **Keel rise aft:** z_keel(x) = 0.12 T ((0.2 L − x)/(0.2 L))² for x < 0.2 L.
-7. **With one plan only**, the same round bilge is used. If a midship section was read, its shape s(z) instead gives y = b(x) s(z)^p(x), with p fitted to the lower deck where there is one.
+4. **Profile outline.** All closed compartments of the profile view below the depth are joined. For each height z (every 0.25 m), they give the aft end x_a(z) and the forward end x_f(z) of the hull.
+   - Deck lines cut through the compartments, so the ends at each height are the outermost found within ±0.5 m of it.
+   - The outline is grown by 0.3 m, because the compartments stop at the inside of the hull line.
+   - The profile is stretched so that its ends are at 0 and at the length overall, which also corrects views of a scan that are not lined up.
+   - The profile is used only if, in the upper half of the depth, it covers at least 85% of the length.
+5. **Keel line.** Along the length, the keel z_k(x) is the lowest compartment within ±3 m. It is flat (z = 0) between the first and the last place where it is below 0.15 D, and it only rises towards the ends (rise of floor aft, forefoot).
+6. **Fitting the waterlines to the profile.** At each height z, the deck outline is fitted between x_a(z) and x_f(z): a station x takes the breadth of the deck outline at x' = x_0 + (x − x_a)(x_1 − x_0)/(x_f − x_a), where [x_0, x_1] is the length of the deck outline. Outside [x_a, x_f] there is no hull. A raked or X-bow stem and a stern overhang are kept this way.
+7. **Between decks**, linear interpolation: y(x, z) = b_k + (z − z_k)/(z_(k+1) − z_k) × (b_(k+1) − b_k).
+8. **Under the lowest deck**, a round bilge of radius r = min(0.06 B, 0.9 b) on the half-breadth b of that deck. With h = z − z_k(x): y(h) = (b − r) + sqrt(r² − (r − h)²) for h < r, and y = b above.
+9. **Without a usable profile**, the hull runs the full length at every height, and the keel rises aft as an assumed curve: z_k(x) = 0.12 T ((0.2 L − x)/(0.2 L))² for x < 0.2 L.
+10. **With one plan only**, the same round bilge is used. If a midship section was read, its shape s(z) instead gives y = b(x) s(z)^p(x), with p fitted to the lower deck where there is one.
+
+The hull stops at the depth D. Bow shapes above the main deck (an X-bow, a forecastle) are not part of it. Hull contours edited in **Edit hull** replace the guess.
 
 The block coefficient and the displacement in the report are estimates from the offsets (trapezoidal rule):
 
@@ -303,7 +314,7 @@ For pictures, the same sheets rendered as 150 dpi images give 317 blocks for the
 - **Boxes only:** compartments are proposed as boxes around their outline. Curved, stepped or sloping compartments (at the bilge, in the bow and stern) are larger than the real space.
 - **One drawing page:** views spread over several pages (for example a profile on page 1 and deck plans on pages 2 and 3) are not combined yet. A page with a lines plan (sheer, half-breadth and body plan) can be taken as the GA by mistake: choose the right page in *Document*.
 - **Pictures:** low resolution (under about 150 dpi), faint or grey lines, hatching and handwriting reduce the results. A picture sheet printed bow-up may stay at the wrong turn: press Turn. OCR takes about a minute and can misread names and numbers.
-- **The hull** is a guess from the block outlines. It is no better than the deck plans: with one plan only, the bilge and the ends are assumed. Check it in Edit hull.
+- **The hull** is a guess from the block outlines of the plans and the profile, at 41 stations and 22 waterlines. Its ends are only as good as the compartments of the profile: an end with no closed compartment is cut short. With one plan only, the bilge is assumed. Check it in Edit hull.
 - **Particulars** are read by pattern matching of labels and values. Unusual labels (for example with words in brackets) can be missed: type them.
 - **Copyright:** the drawings you open stay on your computer and remain the property of their owners.
 

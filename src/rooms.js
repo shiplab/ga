@@ -226,6 +226,10 @@
       var zTop = isPlan ? above(v.z) : null, top = isPlan && zTop == null;
       if (isPlan && (!envV || v.f.bot - v.f.top > envV.f.bot - envV.f.top + 0.5 || (D && Math.abs(v.z - D) < 0.3))) envV = { v: v, f: v.f, A: A };   // the hull outline: the main deck plan, else the widest
       var vrec = { title: v.title, role: v.role, z: v.z, box: v.box, cl: f.cl, base: f.base, n: 0 }; out.views.push(vrec);
+      if (v.role === 'profile' && D && window.GA2DBB && GA2DBB.profileOutline) {      // the hull outline in the profile: the compartments of the profile, up to the depth
+        var okP = {}, hP = A.lab.length / A.w; A.areas.forEach(function (a) { if (a.area / (ppm * ppmZ) >= minA) okP[a.id] = 1; });
+        try { out.profOutline = GA2DBB.profileOutline(A.w, hP, function (px, py) { return okP[A.lab[py * A.w + px]] === 1; }, function (px) { return (A.box.x0 + px / A.K - aft) / ppm; }, function (py) { return (f.base - (A.box.y0 + py / A.K)) / ppmZ; }, D); } catch (e) { }
+      }
       var inside = texts.filter(function (t) { var cx = (t.x0 + t.x1) / 2, cy = (t.y0 + t.y1) / 2; return cx > v.box.x0 && cx < v.box.x1 && cy > v.box.y0 && cy < v.box.y1 && t.text !== v.title; });
       // door openings: closed up to the small gap first; an area that then holds two or more labels (cabins open to a corridor)
       // is cut again with the large gap, which closes the doors too

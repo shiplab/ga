@@ -1236,6 +1236,31 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   /* ---------- a guessed hull ----------
      Half-breadths come from the outline of the plan views (measured). The bilge radius and the rise of the keel aft are assumed, the sides are vertical,
      the deck is flat at the depth. Returns a DBB hull of type 'offsets' with a few numbers to check, or null if there is no outline. */
+  /* the outline of the hull in the profile view, from the compartments found there: for each height the aft and forward ends, along the length the keel.
+     ok(px, py): the pixel belongs to a compartment; X(px), Z(py): metres. Only up to the depth (the hull, not the superstructure). */
+  function profileOutline(w, h, ok, X, Z, D) {
+    var bins = {}, kb = {}, px, py;
+    for (py = 0; py < h; py++) {
+      var z = Z(py); if (z < -0.2 || z > D + 0.2) continue; var a = -1, c = -1;
+      for (px = 0; px < w; px++) if (ok(px, py)) { if (a < 0) a = px; c = px; }
+      if (a < 0) continue; var k = Math.round(z * 4) / 4, xa = X(a), xf = X(c);
+      if (!bins[k]) bins[k] = { z: k, xa: xa, xf: xf }; else { bins[k].xa = Math.min(bins[k].xa, xa); bins[k].xf = Math.max(bins[k].xf, xf); }
+      for (px = a; px <= c; px++) if (ok(px, py)) { var kx = Math.round(X(px) * 2) / 2; if (kb[kx] == null || z < kb[kx]) kb[kx] = z; }
+    }
+    var raw = Object.keys(bins).map(function (k) { return bins[k]; }).filter(function (q) { return q.z <= D - 0.2; }).sort(function (p, q) { return p.z - q.z; });
+    // decks and flats are drawn as lines: a height that falls on one sees only part of the compartments. The ends at each height are the outermost within 0.5 m up or down,
+    // and the outline is grown by half a line gap (the compartments stop at the inside of the hull line)
+    var g = 0.3, rows = raw.map(function (q) { var nb = raw.filter(function (u) { return Math.abs(u.z - q.z) <= 0.5; }); return { z: q.z, xa: Math.min.apply(null, nb.map(function (u) { return u.xa; })) - g, xf: Math.max.apply(null, nb.map(function (u) { return u.xf; })) + g }; });
+    var k0 = Object.keys(kb).map(function (k) { return { x: +k, z: kb[k] }; }).sort(function (p, q) { return p.x - q.x; });
+    // the keel: the lowest compartment within 3 m along the length; flat (z = 0) between the first and the last place where it is low; rising only towards the ends
+    var keel = k0.map(function (q) { var nb = k0.filter(function (u) { return Math.abs(u.x - q.x) <= 3; }); return { x: q.x, z: Math.max(0, Math.min.apply(null, nb.map(function (u) { return u.z; })) - g) }; });
+    var low = keel.filter(function (q) { return q.z < 0.15 * D; });
+    if (low.length) { var la = low[0].x, lf = low[low.length - 1].x, i;
+      keel.forEach(function (q) { if (q.x >= la && q.x <= lf) q.z = 0; });
+      for (i = keel.length - 2; i >= 0; i--) if (keel[i].x < la) keel[i].z = Math.max(keel[i].z, keel[i + 1].z);     // aft: the keel only rises going aft
+      for (i = 1; i < keel.length; i++) if (keel[i].x > lf) keel[i].z = Math.max(keel[i].z, keel[i - 1].z); }        // forward: only rises going forward
+    return rows.length >= 3 ? { rows: rows, keel: keel } : null;
+  }
   function guessHull(res, info, o) {
     o = o || {}; info = info || {};
     var sc = res && res.scale; if (!sc || sc.sx == null || !res.envelope) return null;
@@ -1251,7 +1276,21 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     var f = (B / 2) / Math.max.apply(null, b); if (Math.abs(f - 1) > 0.1) f = 1; b = b.map(function (v) { return v * f; });
     b[nx - 1] = Math.min(b[nx - 1], 0.02 * B);                              // the stem is a point
     var rB = o.bilge != null ? o.bilge : 0.06 * B, runL = 0.2 * L, runH = 0.12 * T, zs = [], half = [], zk = [];
-    for (i = 0; i < nx; i++) { var x = xs[i]; zk.push(x < runL ? runH * Math.pow((runL - x) / runL, 2) : 0); }
+    // the profile: the aft and forward ends of the hull at each height, and the keel line (from the compartments of the profile view)
+    var P = o.prof && o.prof.rows && o.prof.rows.length >= 3 ? o.prof : null;
+    if (P) {                                                              // the profile spans the length overall: its own ends are stretched to 0 and L (views of a scan are not always lined up)
+      var pmn = Math.min.apply(null, P.rows.map(function (q) { return q.xa; })), pmx = Math.max.apply(null, P.rows.map(function (q) { return q.xf; })), ks = L / Math.max(1e-6, pmx - pmn);
+      if (ks > 0.85 && ks < 1.2) P = { rows: P.rows.map(function (q) { return { z: q.z, xa: (q.xa - pmn) * ks, xf: (q.xf - pmn) * ks }; }), keel: (P.keel || []).map(function (q) { return { x: (q.x - pmn) * ks, z: q.z }; }) }; else P = null;
+    }
+    if (P) { var rD = P.rows.filter(function (q) { return q.z > 0.5 * D; }), spanD = rD.length ? Math.max.apply(null, rD.map(function (q) { return q.xf; })) - Math.min.apply(null, rD.map(function (q) { return q.xa; })) : 0; if (spanD < 0.85 * L) P = null; }    // the profile must cover the length near the deck, else it is not used
+    function lin(list, key, v, a, c) { if (v <= list[0][key]) return [list[0][a], c ? list[0][c] : 0]; var n = list.length - 1; if (v >= list[n][key]) return [list[n][a], c ? list[n][c] : 0]; for (var q = 0; q < n; q++) if (v <= list[q + 1][key]) { var t = (v - list[q][key]) / Math.max(1e-9, list[q + 1][key] - list[q][key]); return [list[q][a] + t * (list[q + 1][a] - list[q][a]), c ? list[q][c] + t * (list[q + 1][c] - list[q][c]) : 0]; } return [list[n][a], c ? list[n][c] : 0]; }
+    function at(arr, fi) { var k = Math.max(0, Math.min(arr.length - 1, Math.floor(fi))), t = fi - k, a = arr[k] || 0, c = arr[Math.min(arr.length - 1, k + 1)] || 0; return a + (c - a) * t; }
+    var bx0 = xs[b.findIndex(function (v) { return v > 0.02; })] || 0, bx1 = xs[nx - 1 - b.slice().reverse().findIndex(function (v) { return v > 0.02; })] || L;
+    for (i = 0; i < nx; i++) {
+      var x = xs[i];
+      if (P && P.keel && P.keel.length >= 3) { var kx = P.keel.filter(function (q) { return Math.abs(q.x - x) <= L / (nx - 1); }); zk.push(kx.length ? Math.max(0, Math.min(0.9 * D, Math.min.apply(null, kx.map(function (q) { return q.z; })))) : (x < P.keel[0].x || x > P.keel[P.keel.length - 1].x ? D : Math.max(0, lin(P.keel, 'x', x, 'z')[0]))); }
+      else zk.push(x < runL ? runH * Math.pow((runL - x) / runL, 2) : 0);
+    }
     var sec = o.section || null, bmx = Math.max.apply(null, b), pw = [];
     for (i = 0; i < nx; i++) {                                              // how much the section is pulled in at station i: 1 at the full part, more forward and aft
       var p = 1 + 1.5 * Math.max(0, 1 - b[i] / bmx);
@@ -1260,19 +1299,24 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     }
     for (j = 0; j < nz; j++) zs.push(r2(D * j / (nz - 1)));
     for (j = 0; j < nz; j++) {
-      var row = [];
+      var row = [], rg = P ? lin(P.rows, 'z', zs[j], 'xa', 'xf') : null;
       for (i = 0; i < nx; i++) {
-        var h = zs[j] - zk[i];
-        if (h < -1e-9 || b[i] < 0.02) { row.push(null); continue; }
+        var h = zs[j] - zk[i], fi = i, bi = b[i];
+        if (rg) {                                                         // the waterline keeps the shape of the deck outline, fitted between the ends of the profile at this height
+          if (xs[i] < rg[0] - 1e-6 || xs[i] > rg[1] + 1e-6 || rg[1] - rg[0] < 0.05 * L) { row.push(null); continue; }
+          fi = (bx0 + (xs[i] - rg[0]) * (bx1 - bx0) / Math.max(1e-6, rg[1] - rg[0])) / L * (nx - 1); bi = at(b, fi);
+          if (xs[i] >= rg[1] - 1e-6) bi = Math.min(bi, 0.02 * B);
+        }
+        if (h < -1e-9 || bi < 0.02) { row.push(null); continue; }
         var y;
-        if (sec) y = b[i] * Math.pow(Math.max(0.001, shapeAt(sec, h * D / Math.max(1e-6, D - zk[i]))), pw[i]);
+        if (sec) y = bi * Math.pow(Math.max(0.001, shapeAt(sec, h * D / Math.max(1e-6, D - zk[i]))), at(pw, fi));
         else if (o.decks && o.decks.length >= 1) {                         // several deck plans: the half-breadth goes straight from one deck to the next, under the lowest one a round bilge
-          var pts = o.decks.filter(function (d) { return d.b[i] > 0 && d.z < D; }).map(function (d) { return [d.z, Math.min(b[i], d.b[i])]; }); pts.push([D, b[i]]);
+          var pts = o.decks.filter(function (d) { return at(d.b, fi) > 0 && d.z < D; }).map(function (d) { return [d.z, Math.min(bi, at(d.b, fi))]; }); pts.push([D, bi]);
           var zz = zs[j] - zk[i];
-          if (pts.length < 2 || zz >= pts[0][0]) { y = b[i]; for (var q = 0; q + 1 < pts.length; q++) if (zz >= pts[q][0] && zz <= pts[q + 1][0]) { var t = (zz - pts[q][0]) / Math.max(1e-6, pts[q + 1][0] - pts[q][0]); y = pts[q][1] + t * (pts[q + 1][1] - pts[q][1]); break; } }
+          if (pts.length < 2 || zz >= pts[0][0]) { y = bi; for (var q = 0; q + 1 < pts.length; q++) if (zz >= pts[q][0] && zz <= pts[q + 1][0]) { var t = (zz - pts[q][0]) / Math.max(1e-6, pts[q + 1][0] - pts[q][0]); y = pts[q][1] + t * (pts[q + 1][1] - pts[q][1]); break; } }
           else { var w0 = pts[0][1], r3 = Math.min(rB, w0 * 0.9); y = h >= r3 ? w0 : (w0 - r3) + Math.sqrt(Math.max(0, r3 * r3 - (r3 - h) * (r3 - h))); }
         }
-        else { var r = Math.min(rB, b[i] * 0.9); y = h >= r ? b[i] : (b[i] - r) + Math.sqrt(Math.max(0, r * r - (r - h) * (r - h))); }
+        else { var r = Math.min(rB, bi * 0.9); y = h >= r ? bi : (bi - r) + Math.sqrt(Math.max(0, r * r - (r - h) * (r - h))); }
         row.push(r2(Math.max(0.02, y)));
       }
       half.push(row);
@@ -1280,7 +1324,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     var vol = 0, Tm = Math.min(T, D);                                      // block coefficient at the draught, trapezoid rule
     for (i = 0; i + 1 < nx; i++) { var a = 0, c = 0; for (j = 0; j + 1 < nz; j++) { var zm = (zs[j] + zs[j + 1]) / 2; if (zs[j + 1] <= Tm + 1e-9) { var ya = half[j][i] == null ? 0 : half[j][i], yb = half[j][i + 1] == null ? 0 : half[j][i + 1]; vol += (ya + yb) / 2 * (xs[i + 1] - xs[i]) * (zs[j + 1] - zs[j]) * 2; } } }
     var cb = vol / (L * B * Tm);
-    return { hull: { type: 'offsets', offsets: { zs: zs, xs: xs, half: half }, x: 0, y: 0, loa: r2(L), beam: r2(B), depth: r2(D), draught: r2(Math.min(D, T)) }, cb: cb, bilge: rB, rise: runH, fromSection: !!sec, fromDecks: !sec && !!(o.decks && o.decks.length >= 1), plan: xs.map(function (x, q) { return [x, r2(b[q])]; }), runL: runL, runH: runH };
+    return { hull: { type: 'offsets', offsets: { zs: zs, xs: xs, half: half }, x: 0, y: 0, loa: r2(L), beam: r2(B), depth: r2(D), draught: r2(Math.min(D, T)) }, cb: cb, bilge: rB, rise: runH, fromSection: !!sec, fromDecks: !sec && !!(o.decks && o.decks.length >= 1), fromProfile: !!P, plan: xs.map(function (x, q) { return [x, r2(b[q])]; }), runL: runL, runH: runH };
   }
 
   /* ---------- blocks from the analysis ---------- */
@@ -1672,7 +1716,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     return lines.join('\r\n') + '\r\n';
   }
 
-  var api = { parseTable: parseTable, SHAPES: SHAPES, shapeFactor: shapeFactor, shapeTris: shapeTris, shapeEdges: shapeEdges, blockTris: blockTris, hullTris: hullTris, stlBinary: stlBinary, zipStore: zipStore, smooth: smooth, curvePath: curvePath, curveFn: curveFn, hullFromContours: hullFromContours, linesFromItems: linesFromItems, parseSpec: parseSpec, frameIndex: frameIndex, sectionShape: sectionShape, titleBoxes: titleBoxes, rulerPitch: rulerPitch, frameSpacing: frameSpacing, sheetViews: sheetViews, sheetRoles: sheetRoles, titleRole: titleRole, splitRows: splitRows, splitSheet: splitSheet, dropAxisLines: dropAxisLines, splitViewsCC: splitViewsCC, guessRotationText: guessRotationText, tableBoxes: tableBoxes, parseOcrLines: parseOcrLines, textSegments: textSegments, textBlocks: textBlocks, guessHull: guessHull, segmentsFromOps: segmentsFromOps, inPage: inPage, rotateSegs: rotateSegs, splitViews: splitViews, segsIn: segsIn, runs: runs, bbox: bbox, guessRotation: guessRotation, guessUp: guessUp,
+  var api = { profileOutline: profileOutline, parseTable: parseTable, SHAPES: SHAPES, shapeFactor: shapeFactor, shapeTris: shapeTris, shapeEdges: shapeEdges, blockTris: blockTris, hullTris: hullTris, stlBinary: stlBinary, zipStore: zipStore, smooth: smooth, curvePath: curvePath, curveFn: curveFn, hullFromContours: hullFromContours, linesFromItems: linesFromItems, parseSpec: parseSpec, frameIndex: frameIndex, sectionShape: sectionShape, titleBoxes: titleBoxes, rulerPitch: rulerPitch, frameSpacing: frameSpacing, sheetViews: sheetViews, sheetRoles: sheetRoles, titleRole: titleRole, splitRows: splitRows, splitSheet: splitSheet, dropAxisLines: dropAxisLines, splitViewsCC: splitViewsCC, guessRotationText: guessRotationText, tableBoxes: tableBoxes, parseOcrLines: parseOcrLines, textSegments: textSegments, textBlocks: textBlocks, guessHull: guessHull, segmentsFromOps: segmentsFromOps, inPage: inPage, rotateSegs: rotateSegs, splitViews: splitViews, segsIn: segsIn, runs: runs, bbox: bbox, guessRotation: guessRotation, guessUp: guessUp,
     describeView: describeView, guessRoles: guessRoles, analyse: analyse, suggestTanks: suggestTanks, houseWidth: houseWidth, parseInfo: parseInfo, buildProject: buildProject, toCSV: toCSV, defaultGroups: defaultGroups, GROUP_NAMES: GROUP_NAMES, r2: r2 };
   root.GA2DBB = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
@@ -2960,6 +3004,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
       var zTop = isPlan ? above(v.z) : null, top = isPlan && zTop == null;
       if (isPlan && (!envV || v.f.bot - v.f.top > envV.f.bot - envV.f.top + 0.5 || (D && Math.abs(v.z - D) < 0.3))) envV = { v: v, f: v.f, A: A };   // the hull outline: the main deck plan, else the widest
       var vrec = { title: v.title, role: v.role, z: v.z, box: v.box, cl: f.cl, base: f.base, n: 0 }; out.views.push(vrec);
+      if (v.role === 'profile' && D && window.GA2DBB && GA2DBB.profileOutline) {      // the hull outline in the profile: the compartments of the profile, up to the depth
+        var okP = {}, hP = A.lab.length / A.w; A.areas.forEach(function (a) { if (a.area / (ppm * ppmZ) >= minA) okP[a.id] = 1; });
+        try { out.profOutline = GA2DBB.profileOutline(A.w, hP, function (px, py) { return okP[A.lab[py * A.w + px]] === 1; }, function (px) { return (A.box.x0 + px / A.K - aft) / ppm; }, function (py) { return (f.base - (A.box.y0 + py / A.K)) / ppmZ; }, D); } catch (e) { }
+      }
       var inside = texts.filter(function (t) { var cx = (t.x0 + t.x1) / 2, cy = (t.y0 + t.y1) / 2; return cx > v.box.x0 && cx < v.box.x1 && cy > v.box.y0 && cy < v.box.y1 && t.text !== v.title; });
       // door openings: closed up to the small gap first; an area that then holds two or more labels (cabins open to a corridor)
       // is cut again with the large gap, which closes the doors too
@@ -3821,7 +3869,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     var key = [S.fileName, S.gaPage, S.rot, JSON.stringify(S.views), S.roles.join(), sc.sx.toFixed(6), JSON.stringify(S.cvSet), (S.words && S.wordsRot === S.rot) ? S.words.words.length : 0].join('|');
     if (S.picRooms && S.picRooms.key === key) { if (S.picRooms.rows && S.picRooms.rows.length >= 10 && S.engineUsed !== 'picrooms') picApply(S.picRooms.rows, S.picRooms.views, S.picRooms.named, false); return; }
     S.picRooms = { key: key, busy: true }; var gen0 = S.anaGen; ocvStatus('OpenCV: looking for the compartments of every view…');
-    var h0 = histSer(), tok = S.picTok = (S.picTok || 0) + 1, rows = [], r2 = G.r2, notes = [], vframe = {};
+    var h0 = histSer(), tok = S.picTok = (S.picTok || 0) + 1, rows = [], r2 = G.r2, notes = [], vframe = {}, profOut = null;
     try {
       var ppm = 1 / sc.sx, ppmA = 1 / (sc.sy || sc.sx), ppmZ = 1 / (sc.sz || sc.sx), aft = sc.xA, D = S.info.depth || (sc.heightPts ? sc.heightPts * (sc.sz || sc.sx) : 0.1 * (S.info.loa || 100)), B = S.info.beam || (sc.beamPts ? sc.beamPts * (sc.sy || sc.sx) : 0.16 * (S.info.loa || 100));
       var words = S.words && S.wordsRot === S.rot ? S.words.words.filter(function (w) { return w.conf > 45 && /[A-Za-z0-9]/.test(w.text); }) : [];
@@ -3871,6 +3919,10 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
           cl = titled.length ? (lo + hi) / 2 : v.role === 'tank' && sc.yc != null && sc.yc > v.b.y0 && sc.yc < v.b.y1 ? sc.yc : v.role === 'deck' && S.res.deckPlan && S.res.deckPlan.yc > v.b.y0 && S.res.deckPlan.yc < v.b.y1 ? S.res.deckPlan.yc : (lo + hi) / 2;
         }
         var zTop = isPlan ? above(v.z) : null;
+        if (!isPlan && base != null && A.areas.length && (S.info.depth || D)) {      // the hull outline in the profile, from its compartments
+          var okA = {}; A.areas.forEach(function (a) { if (a.areaPx / (ppm * ppmZ) >= 1) okA[a.id] = 1; });
+          try { profOut = G.profileOutline(Math.round(v.b.x1 - v.b.x0), Math.round(v.b.y1 - v.b.y0), function (px, py) { return okA[A.at(v.b.x0 + px, v.b.y0 + py)] === 1; }, function (px) { return (v.b.x0 + px - aft) / ppm; }, function (py) { return (base - (v.b.y0 + py)) / ppmZ; }, S.info.depth || D); } catch (e) { profOut = null; }
+        }
         vframe[v.i] = { aft: aft, ppm: ppm, ppmA: ppmA, ppmZ: ppmZ, cl: cl, base: base, z: isPlan ? v.z : null, zTop: zTop };      // the frame of this view, for Draw block and Find blocks in this view
         A.areas.forEach(function (a, k) {
           var m2 = a.areaPx / (ppm * ppmA); if (m2 < 1) return;
@@ -3894,14 +3946,14 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
       }).map(function (r) { r.y0 = -B / 4; r.y1 = B / 4; r.widthAssumed = true; return r; }));
       rows.forEach(function (r) { ['x0', 'x1', 'y0', 'y1', 'z0', 'z1'].forEach(function (k) { r[k] = r2(r[k]); }); r.side = r.y0 > 0.1 ? 'P' : r.y1 < -0.1 ? 'S' : ''; });
     } catch (e) { S.picRooms = { key: key, err: (e && e.message) || String(e) }; ocvStatus(); return; }
-    S.picRooms = { key: key, rows: rows, views: vs.length, named: words.length > 0, vframe: vframe };
+    S.picRooms = { key: key, rows: rows, views: vs.length, named: words.length > 0, vframe: vframe, prof: profOut };
     if (rows.length < 10) { ocvStatus('OpenCV found only ' + rows.length + ' compartments on the picture: the blocks of the picture analysis are kept.'); return; }
     if (histSer() !== h0 && S.anaGen === gen0) { ocvStatus('OpenCV found ' + rows.length + ' compartments, but you changed the blocks meanwhile: yours were kept. Press Re-scan drawing to use them.'); return; }
     picApply(rows, vs.length, words.length > 0, true);
   }
   function userNow() { return (S.rows || []).filter(function (r) { return r.kind === 'user'; }); }
   function picApply(rows, nv, named, announce) {
-    S.vframe = S.picRooms && S.picRooms.vframe || null;
+    S.vframe = S.picRooms && S.picRooms.vframe || null; S.profOutline = S.picRooms && S.picRooms.prof || null;
     var uk0 = userNow();
     S.rows = rows.map(function (q) { var row = Object.assign({ id: ++S.uid, on: true, shape: 'box' }, q); if (row.kind === 'cargo') { row.density = 0.85; row.fill = 98; } else if (row.kind === 'tank') { row.density = 1.0; row.fill = 98; } return row; }); S.rows = S.rows.concat(uk0);
     S.engineUsed = 'picrooms'; S.sel = -1;
@@ -3937,7 +3989,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     if (!info.beam) return null;
     var mx = Math.max.apply(null, top.b), f = (info.beam / 2) / mx; if (!(f > 0.7 && f < 1.4)) return null;     // the plans must agree with the beam (within 30%), then they are scaled to it
     ds.forEach(function (d) { d.b = d.b.map(function (v) { return Math.min(info.beam / 2, v * f); }); });
-    var g = G.guessHull(res, info, { section: section, low: low ? { z: low.z, b: low.b } : null, decks: ds.filter(function (d) { return d !== top; }) });
+    var g = G.guessHull(res, info, { section: section, low: low ? { z: low.z, b: low.b } : null, decks: ds.filter(function (d) { return d !== top; }), prof: S.profOutline });
     if (g) g.decks = ds.length;
     return g;
   }
@@ -3947,6 +3999,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     sc.sx = 1 / o.scale.ppm; sc.sy = sc.sz = 1 / o.scale.ppmA; sc.xA = o.scale.aft; sc.lengthPts = o.L * o.scale.ppm; sc.lengthHow = 'compartments: ' + o.scale.how;
     if (prof) sc.baseY = prof.base; var tp = plans.slice().sort(function (a, b) { return a.z - b.z; })[0], up = plans.slice().sort(function (a, b) { return b.z - a.z; })[0];
     if (tp) sc.yc = tp.cl; res.deckPlan = Object.assign({ segs: [] }, res.deckPlan || {}, { yc: up ? up.cl : sc.yc });
+    S.profOutline = o.profOutline || null;
     S.vframe = {}; o.views.forEach(function (v, i) { var above = plans.filter(function (q) { return q.z > v.z + 0.2; }).sort(function (a, b) { return a.z - b.z; })[0]; S.vframe[i] = { aft: o.scale.aft, ppm: o.scale.ppm, ppmA: o.scale.ppmA, ppmZ: o.scale.ppmZ || o.scale.ppmA, cl: v.cl, base: v.base, z: v.role === 'plan' ? v.z : null, zTop: v.role === 'plan' ? (above ? above.z : null) : null }; });
     S.views = o.views.map(function (v) { return { x0: v.box.x0, y0: v.box.y0, x1: v.box.x1, y1: v.box.y1, n: v.n, title: v.title }; });
     S.roles = o.views.map(function (v) { var t = v.title.toUpperCase(); return v.role !== 'plan' ? v.role : v === tp ? 'tank' : v === up ? 'deck' : 'plan'; });
@@ -3957,7 +4010,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     res.tankNote = null; S.engineUsed = 'rooms';
     if (o.beamPt) { sc.beamPts = o.beamPt; sc.beamRatio = S.info.beam ? o.beamPt / o.scale.ppmA / S.info.beam : null; }
     if (S.info.depth) { sc.heightPts = S.info.depth * o.scale.ppmZ; sc.depthRatio = 1; }
-    try { var gd = hullFromDecks(S.info, S.section); if (o.envelope && !(gd && gd.decks >= 2)) { res.envelope = o.envelope; gd = G.guessHull(res, S.info, {}); } if (gd) { S.guess = gd; if (S.hullMode === 'preset') { S.hullMode = 'guess'; $('selHull').value = 'guess'; } } } catch (e) { }
+    try { var gd = hullFromDecks(S.info, S.section); if (o.envelope && !(gd && gd.decks >= 2)) { res.envelope = o.envelope; gd = G.guessHull(res, S.info, { prof: S.profOutline }); } if (gd) { S.guess = gd; if (S.hullMode === 'preset') { S.hullMode = 'guess'; $('selHull').value = 'guess'; } } } catch (e) { }
     renderViews();
     return true;
   }
@@ -4029,7 +4082,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     }
   }
   function reanalyse(notify, again) {
-    S.anaGen = (S.anaGen || 0) + 1; S.vframe = null;
+    S.anaGen = (S.anaGen || 0) + 1; S.vframe = null; S.profOutline = null;
     if (!S.rotd) return;
     if (S.cruise && S.raster) { cruiseAnalyse(); if (notify) toast('Blocks updated: ' + S.rows.length + '.'); return; }
     if (!again) ['loa', 'beam', 'depth'].forEach(function (k) { if (S.est[k]) { delete S.info[k]; delete S.est[k]; delete S.infoSrc[k]; } });   // values that were only measured or assumed are measured again
@@ -5320,7 +5373,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
     }
     // ---------- the hull: lines, numbers, 3D ----------
     newPage(); doc.text(M, 60, 'Hull', 12, { bold: true, color: BLUE });
-    var hsrc = !hl ? 'The DBB preset (no hull was guessed here: DBB makes one from its own parameters when the file opens).' : S.hullMode === 'contour' ? 'Drawn from the hull contours picked on the drawing (Edit hull).' : S.guess && S.guess.fromDecks ? 'Guessed from the deck plans: ' + (S.guess.decks || '') + ' plan outlines, interpolated between the decks, round bilge under the lowest one.' : S.guess && S.guess.fromSection ? 'Guessed from the plan outline and the midship section.' : S.guess && S.guess.fromOcv ? 'Read by OpenCV from the hull table of the drawing.' : 'Guessed from the outline of the main plan, with a round bilge (assumed radius 6% of the beam).';
+    var hsrc = !hl ? 'The DBB preset (no hull was guessed here: DBB makes one from its own parameters when the file opens).' : S.hullMode === 'contour' ? 'Drawn from the hull contours picked on the drawing (Edit hull).' : S.guess && S.guess.fromDecks ? 'Guessed from the deck plans: ' + (S.guess.decks || '') + ' plan outlines, interpolated between the decks, round bilge under the lowest one' + (S.guess.fromProfile ? '; the ends and the keel line from the compartments of the profile.' : '; the profile was not used (its compartments do not cover the length).') : S.guess && S.guess.fromSection ? 'Guessed from the plan outline and the midship section.' : S.guess && S.guess.fromOcv ? 'Read by OpenCV from the hull table of the drawing.' : 'Guessed from the outline of the main plan, with a round bilge (assumed radius 6% of the beam).';
     var hy = 80; function hk(l, v) { doc.text(M, hy, l, 8.5, { color: GREY }); doc.text(M + 190, hy, v, 8.5, { align: 'right', bold: true }); hy += 13; }
     if (hl) {
       var T = hl.draught || 0, cbv = null, of2 = hl.offsets;
@@ -5392,7 +5445,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   $('btnStl').onclick = stlDialog;
 
   size();
-  window.GA_APP = S; S.hcToPage = hcToPage;      // the hull handles in drawing units (used by the tests)
+  window.GA_APP = S; S.hcToPage = hcToPage; S.d3snap = d3snap;      // the hull handles in drawing units (used by the tests)
 })();
 
 </script>

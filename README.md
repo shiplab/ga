@@ -17,7 +17,7 @@ It runs entirely in your web browser. The drawing is never uploaded, and the app
 - **Reads vector PDFs from their geometry.** The lines and text of the PDF are read directly. Every closed compartment of every titled view (profile, deck plans, tank top) becomes a block, named from the text inside it.
 - **Reads pictures with computer vision.** OpenCV finds the closed compartments of each view, and OCR (Tesseract) reads the titles and the names. Settings let you tune what counts as a line, and an overlay shows what OpenCV sees.
 - **Finds the main particulars** (length, beam, depth, draught, double bottom, tanks …) on the particulars page.
-- **Guesses the hull** from the deck plans, interpolating between the decks, with a round bilge under the lowest one. The contours can be edited.
+- **Guesses the hull** from the deck plans and the profile. The plans give the breadth, interpolated between the decks; the profile gives the ends (raked stem, stern overhang) and the keel line. The contours can be edited.
 - **Saves** a DBB project (JSON), an STL solid, a blocks CSV and a PDF report. The report has the GA drawn again from the blocks, the hull with its body plan and 3D views, and the blocks table.
 
 ## Quick start

@@ -548,7 +548,7 @@
     var key = [S.fileName, S.gaPage, S.rot, JSON.stringify(S.views), S.roles.join(), sc.sx.toFixed(6), JSON.stringify(S.cvSet), (S.words && S.wordsRot === S.rot) ? S.words.words.length : 0].join('|');
     if (S.picRooms && S.picRooms.key === key) { if (S.picRooms.rows && S.picRooms.rows.length >= 10 && S.engineUsed !== 'picrooms') picApply(S.picRooms.rows, S.picRooms.views, S.picRooms.named, false); return; }
     S.picRooms = { key: key, busy: true }; var gen0 = S.anaGen; ocvStatus('OpenCV: looking for the compartments of every view…');
-    var h0 = histSer(), tok = S.picTok = (S.picTok || 0) + 1, rows = [], r2 = G.r2, notes = [], vframe = {};
+    var h0 = histSer(), tok = S.picTok = (S.picTok || 0) + 1, rows = [], r2 = G.r2, notes = [], vframe = {}, profOut = null;
     try {
       var ppm = 1 / sc.sx, ppmA = 1 / (sc.sy || sc.sx), ppmZ = 1 / (sc.sz || sc.sx), aft = sc.xA, D = S.info.depth || (sc.heightPts ? sc.heightPts * (sc.sz || sc.sx) : 0.1 * (S.info.loa || 100)), B = S.info.beam || (sc.beamPts ? sc.beamPts * (sc.sy || sc.sx) : 0.16 * (S.info.loa || 100));
       var words = S.words && S.wordsRot === S.rot ? S.words.words.filter(function (w) { return w.conf > 45 && /[A-Za-z0-9]/.test(w.text); }) : [];
@@ -598,6 +598,10 @@
           cl = titled.length ? (lo + hi) / 2 : v.role === 'tank' && sc.yc != null && sc.yc > v.b.y0 && sc.yc < v.b.y1 ? sc.yc : v.role === 'deck' && S.res.deckPlan && S.res.deckPlan.yc > v.b.y0 && S.res.deckPlan.yc < v.b.y1 ? S.res.deckPlan.yc : (lo + hi) / 2;
         }
         var zTop = isPlan ? above(v.z) : null;
+        if (!isPlan && base != null && A.areas.length && (S.info.depth || D)) {      // the hull outline in the profile, from its compartments
+          var okA = {}; A.areas.forEach(function (a) { if (a.areaPx / (ppm * ppmZ) >= 1) okA[a.id] = 1; });
+          try { profOut = G.profileOutline(Math.round(v.b.x1 - v.b.x0), Math.round(v.b.y1 - v.b.y0), function (px, py) { return okA[A.at(v.b.x0 + px, v.b.y0 + py)] === 1; }, function (px) { return (v.b.x0 + px - aft) / ppm; }, function (py) { return (base - (v.b.y0 + py)) / ppmZ; }, S.info.depth || D); } catch (e) { profOut = null; }
+        }
         vframe[v.i] = { aft: aft, ppm: ppm, ppmA: ppmA, ppmZ: ppmZ, cl: cl, base: base, z: isPlan ? v.z : null, zTop: zTop };      // the frame of this view, for Draw block and Find blocks in this view
         A.areas.forEach(function (a, k) {
           var m2 = a.areaPx / (ppm * ppmA); if (m2 < 1) return;
@@ -621,14 +625,14 @@
       }).map(function (r) { r.y0 = -B / 4; r.y1 = B / 4; r.widthAssumed = true; return r; }));
       rows.forEach(function (r) { ['x0', 'x1', 'y0', 'y1', 'z0', 'z1'].forEach(function (k) { r[k] = r2(r[k]); }); r.side = r.y0 > 0.1 ? 'P' : r.y1 < -0.1 ? 'S' : ''; });
     } catch (e) { S.picRooms = { key: key, err: (e && e.message) || String(e) }; ocvStatus(); return; }
-    S.picRooms = { key: key, rows: rows, views: vs.length, named: words.length > 0, vframe: vframe };
+    S.picRooms = { key: key, rows: rows, views: vs.length, named: words.length > 0, vframe: vframe, prof: profOut };
     if (rows.length < 10) { ocvStatus('OpenCV found only ' + rows.length + ' compartments on the picture: the blocks of the picture analysis are kept.'); return; }
     if (histSer() !== h0 && S.anaGen === gen0) { ocvStatus('OpenCV found ' + rows.length + ' compartments, but you changed the blocks meanwhile: yours were kept. Press Re-scan drawing to use them.'); return; }
     picApply(rows, vs.length, words.length > 0, true);
   }
   function userNow() { return (S.rows || []).filter(function (r) { return r.kind === 'user'; }); }
   function picApply(rows, nv, named, announce) {
-    S.vframe = S.picRooms && S.picRooms.vframe || null;
+    S.vframe = S.picRooms && S.picRooms.vframe || null; S.profOutline = S.picRooms && S.picRooms.prof || null;
     var uk0 = userNow();
     S.rows = rows.map(function (q) { var row = Object.assign({ id: ++S.uid, on: true, shape: 'box' }, q); if (row.kind === 'cargo') { row.density = 0.85; row.fill = 98; } else if (row.kind === 'tank') { row.density = 1.0; row.fill = 98; } return row; }); S.rows = S.rows.concat(uk0);
     S.engineUsed = 'picrooms'; S.sel = -1;
@@ -664,7 +668,7 @@
     if (!info.beam) return null;
     var mx = Math.max.apply(null, top.b), f = (info.beam / 2) / mx; if (!(f > 0.7 && f < 1.4)) return null;     // the plans must agree with the beam (within 30%), then they are scaled to it
     ds.forEach(function (d) { d.b = d.b.map(function (v) { return Math.min(info.beam / 2, v * f); }); });
-    var g = G.guessHull(res, info, { section: section, low: low ? { z: low.z, b: low.b } : null, decks: ds.filter(function (d) { return d !== top; }) });
+    var g = G.guessHull(res, info, { section: section, low: low ? { z: low.z, b: low.b } : null, decks: ds.filter(function (d) { return d !== top; }), prof: S.profOutline });
     if (g) g.decks = ds.length;
     return g;
   }
@@ -674,6 +678,7 @@
     sc.sx = 1 / o.scale.ppm; sc.sy = sc.sz = 1 / o.scale.ppmA; sc.xA = o.scale.aft; sc.lengthPts = o.L * o.scale.ppm; sc.lengthHow = 'compartments: ' + o.scale.how;
     if (prof) sc.baseY = prof.base; var tp = plans.slice().sort(function (a, b) { return a.z - b.z; })[0], up = plans.slice().sort(function (a, b) { return b.z - a.z; })[0];
     if (tp) sc.yc = tp.cl; res.deckPlan = Object.assign({ segs: [] }, res.deckPlan || {}, { yc: up ? up.cl : sc.yc });
+    S.profOutline = o.profOutline || null;
     S.vframe = {}; o.views.forEach(function (v, i) { var above = plans.filter(function (q) { return q.z > v.z + 0.2; }).sort(function (a, b) { return a.z - b.z; })[0]; S.vframe[i] = { aft: o.scale.aft, ppm: o.scale.ppm, ppmA: o.scale.ppmA, ppmZ: o.scale.ppmZ || o.scale.ppmA, cl: v.cl, base: v.base, z: v.role === 'plan' ? v.z : null, zTop: v.role === 'plan' ? (above ? above.z : null) : null }; });
     S.views = o.views.map(function (v) { return { x0: v.box.x0, y0: v.box.y0, x1: v.box.x1, y1: v.box.y1, n: v.n, title: v.title }; });
     S.roles = o.views.map(function (v) { var t = v.title.toUpperCase(); return v.role !== 'plan' ? v.role : v === tp ? 'tank' : v === up ? 'deck' : 'plan'; });
@@ -684,7 +689,7 @@
     res.tankNote = null; S.engineUsed = 'rooms';
     if (o.beamPt) { sc.beamPts = o.beamPt; sc.beamRatio = S.info.beam ? o.beamPt / o.scale.ppmA / S.info.beam : null; }
     if (S.info.depth) { sc.heightPts = S.info.depth * o.scale.ppmZ; sc.depthRatio = 1; }
-    try { var gd = hullFromDecks(S.info, S.section); if (o.envelope && !(gd && gd.decks >= 2)) { res.envelope = o.envelope; gd = G.guessHull(res, S.info, {}); } if (gd) { S.guess = gd; if (S.hullMode === 'preset') { S.hullMode = 'guess'; $('selHull').value = 'guess'; } } } catch (e) { }
+    try { var gd = hullFromDecks(S.info, S.section); if (o.envelope && !(gd && gd.decks >= 2)) { res.envelope = o.envelope; gd = G.guessHull(res, S.info, { prof: S.profOutline }); } if (gd) { S.guess = gd; if (S.hullMode === 'preset') { S.hullMode = 'guess'; $('selHull').value = 'guess'; } } } catch (e) { }
     renderViews();
     return true;
   }
@@ -756,7 +761,7 @@
     }
   }
   function reanalyse(notify, again) {
-    S.anaGen = (S.anaGen || 0) + 1; S.vframe = null;
+    S.anaGen = (S.anaGen || 0) + 1; S.vframe = null; S.profOutline = null;
     if (!S.rotd) return;
     if (S.cruise && S.raster) { cruiseAnalyse(); if (notify) toast('Blocks updated: ' + S.rows.length + '.'); return; }
     if (!again) ['loa', 'beam', 'depth'].forEach(function (k) { if (S.est[k]) { delete S.info[k]; delete S.est[k]; delete S.infoSrc[k]; } });   // values that were only measured or assumed are measured again
@@ -2047,7 +2052,7 @@
     }
     // ---------- the hull: lines, numbers, 3D ----------
     newPage(); doc.text(M, 60, 'Hull', 12, { bold: true, color: BLUE });
-    var hsrc = !hl ? 'The DBB preset (no hull was guessed here: DBB makes one from its own parameters when the file opens).' : S.hullMode === 'contour' ? 'Drawn from the hull contours picked on the drawing (Edit hull).' : S.guess && S.guess.fromDecks ? 'Guessed from the deck plans: ' + (S.guess.decks || '') + ' plan outlines, interpolated between the decks, round bilge under the lowest one.' : S.guess && S.guess.fromSection ? 'Guessed from the plan outline and the midship section.' : S.guess && S.guess.fromOcv ? 'Read by OpenCV from the hull table of the drawing.' : 'Guessed from the outline of the main plan, with a round bilge (assumed radius 6% of the beam).';
+    var hsrc = !hl ? 'The DBB preset (no hull was guessed here: DBB makes one from its own parameters when the file opens).' : S.hullMode === 'contour' ? 'Drawn from the hull contours picked on the drawing (Edit hull).' : S.guess && S.guess.fromDecks ? 'Guessed from the deck plans: ' + (S.guess.decks || '') + ' plan outlines, interpolated between the decks, round bilge under the lowest one' + (S.guess.fromProfile ? '; the ends and the keel line from the compartments of the profile.' : '; the profile was not used (its compartments do not cover the length).') : S.guess && S.guess.fromSection ? 'Guessed from the plan outline and the midship section.' : S.guess && S.guess.fromOcv ? 'Read by OpenCV from the hull table of the drawing.' : 'Guessed from the outline of the main plan, with a round bilge (assumed radius 6% of the beam).';
     var hy = 80; function hk(l, v) { doc.text(M, hy, l, 8.5, { color: GREY }); doc.text(M + 190, hy, v, 8.5, { align: 'right', bold: true }); hy += 13; }
     if (hl) {
       var T = hl.draught || 0, cbv = null, of2 = hl.offsets;
@@ -2119,5 +2124,5 @@
   $('btnStl').onclick = stlDialog;
 
   size();
-  window.GA_APP = S; S.hcToPage = hcToPage;      // the hull handles in drawing units (used by the tests)
+  window.GA_APP = S; S.hcToPage = hcToPage; S.d3snap = d3snap;      // the hull handles in drawing units (used by the tests)
 })();

@@ -799,6 +799,31 @@
   /* ---------- a guessed hull ----------
      Half-breadths come from the outline of the plan views (measured). The bilge radius and the rise of the keel aft are assumed, the sides are vertical,
      the deck is flat at the depth. Returns a DBB hull of type 'offsets' with a few numbers to check, or null if there is no outline. */
+  /* the outline of the hull in the profile view, from the compartments found there: for each height the aft and forward ends, along the length the keel.
+     ok(px, py): the pixel belongs to a compartment; X(px), Z(py): metres. Only up to the depth (the hull, not the superstructure). */
+  function profileOutline(w, h, ok, X, Z, D) {
+    var bins = {}, kb = {}, px, py;
+    for (py = 0; py < h; py++) {
+      var z = Z(py); if (z < -0.2 || z > D + 0.2) continue; var a = -1, c = -1;
+      for (px = 0; px < w; px++) if (ok(px, py)) { if (a < 0) a = px; c = px; }
+      if (a < 0) continue; var k = Math.round(z * 4) / 4, xa = X(a), xf = X(c);
+      if (!bins[k]) bins[k] = { z: k, xa: xa, xf: xf }; else { bins[k].xa = Math.min(bins[k].xa, xa); bins[k].xf = Math.max(bins[k].xf, xf); }
+      for (px = a; px <= c; px++) if (ok(px, py)) { var kx = Math.round(X(px) * 2) / 2; if (kb[kx] == null || z < kb[kx]) kb[kx] = z; }
+    }
+    var raw = Object.keys(bins).map(function (k) { return bins[k]; }).filter(function (q) { return q.z <= D - 0.2; }).sort(function (p, q) { return p.z - q.z; });
+    // decks and flats are drawn as lines: a height that falls on one sees only part of the compartments. The ends at each height are the outermost within 0.5 m up or down,
+    // and the outline is grown by half a line gap (the compartments stop at the inside of the hull line)
+    var g = 0.3, rows = raw.map(function (q) { var nb = raw.filter(function (u) { return Math.abs(u.z - q.z) <= 0.5; }); return { z: q.z, xa: Math.min.apply(null, nb.map(function (u) { return u.xa; })) - g, xf: Math.max.apply(null, nb.map(function (u) { return u.xf; })) + g }; });
+    var k0 = Object.keys(kb).map(function (k) { return { x: +k, z: kb[k] }; }).sort(function (p, q) { return p.x - q.x; });
+    // the keel: the lowest compartment within 3 m along the length; flat (z = 0) between the first and the last place where it is low; rising only towards the ends
+    var keel = k0.map(function (q) { var nb = k0.filter(function (u) { return Math.abs(u.x - q.x) <= 3; }); return { x: q.x, z: Math.max(0, Math.min.apply(null, nb.map(function (u) { return u.z; })) - g) }; });
+    var low = keel.filter(function (q) { return q.z < 0.15 * D; });
+    if (low.length) { var la = low[0].x, lf = low[low.length - 1].x, i;
+      keel.forEach(function (q) { if (q.x >= la && q.x <= lf) q.z = 0; });
+      for (i = keel.length - 2; i >= 0; i--) if (keel[i].x < la) keel[i].z = Math.max(keel[i].z, keel[i + 1].z);     // aft: the keel only rises going aft
+      for (i = 1; i < keel.length; i++) if (keel[i].x > lf) keel[i].z = Math.max(keel[i].z, keel[i - 1].z); }        // forward: only rises going forward
+    return rows.length >= 3 ? { rows: rows, keel: keel } : null;
+  }
   function guessHull(res, info, o) {
     o = o || {}; info = info || {};
     var sc = res && res.scale; if (!sc || sc.sx == null || !res.envelope) return null;
@@ -814,7 +839,21 @@
     var f = (B / 2) / Math.max.apply(null, b); if (Math.abs(f - 1) > 0.1) f = 1; b = b.map(function (v) { return v * f; });
     b[nx - 1] = Math.min(b[nx - 1], 0.02 * B);                              // the stem is a point
     var rB = o.bilge != null ? o.bilge : 0.06 * B, runL = 0.2 * L, runH = 0.12 * T, zs = [], half = [], zk = [];
-    for (i = 0; i < nx; i++) { var x = xs[i]; zk.push(x < runL ? runH * Math.pow((runL - x) / runL, 2) : 0); }
+    // the profile: the aft and forward ends of the hull at each height, and the keel line (from the compartments of the profile view)
+    var P = o.prof && o.prof.rows && o.prof.rows.length >= 3 ? o.prof : null;
+    if (P) {                                                              // the profile spans the length overall: its own ends are stretched to 0 and L (views of a scan are not always lined up)
+      var pmn = Math.min.apply(null, P.rows.map(function (q) { return q.xa; })), pmx = Math.max.apply(null, P.rows.map(function (q) { return q.xf; })), ks = L / Math.max(1e-6, pmx - pmn);
+      if (ks > 0.85 && ks < 1.2) P = { rows: P.rows.map(function (q) { return { z: q.z, xa: (q.xa - pmn) * ks, xf: (q.xf - pmn) * ks }; }), keel: (P.keel || []).map(function (q) { return { x: (q.x - pmn) * ks, z: q.z }; }) }; else P = null;
+    }
+    if (P) { var rD = P.rows.filter(function (q) { return q.z > 0.5 * D; }), spanD = rD.length ? Math.max.apply(null, rD.map(function (q) { return q.xf; })) - Math.min.apply(null, rD.map(function (q) { return q.xa; })) : 0; if (spanD < 0.85 * L) P = null; }    // the profile must cover the length near the deck, else it is not used
+    function lin(list, key, v, a, c) { if (v <= list[0][key]) return [list[0][a], c ? list[0][c] : 0]; var n = list.length - 1; if (v >= list[n][key]) return [list[n][a], c ? list[n][c] : 0]; for (var q = 0; q < n; q++) if (v <= list[q + 1][key]) { var t = (v - list[q][key]) / Math.max(1e-9, list[q + 1][key] - list[q][key]); return [list[q][a] + t * (list[q + 1][a] - list[q][a]), c ? list[q][c] + t * (list[q + 1][c] - list[q][c]) : 0]; } return [list[n][a], c ? list[n][c] : 0]; }
+    function at(arr, fi) { var k = Math.max(0, Math.min(arr.length - 1, Math.floor(fi))), t = fi - k, a = arr[k] || 0, c = arr[Math.min(arr.length - 1, k + 1)] || 0; return a + (c - a) * t; }
+    var bx0 = xs[b.findIndex(function (v) { return v > 0.02; })] || 0, bx1 = xs[nx - 1 - b.slice().reverse().findIndex(function (v) { return v > 0.02; })] || L;
+    for (i = 0; i < nx; i++) {
+      var x = xs[i];
+      if (P && P.keel && P.keel.length >= 3) { var kx = P.keel.filter(function (q) { return Math.abs(q.x - x) <= L / (nx - 1); }); zk.push(kx.length ? Math.max(0, Math.min(0.9 * D, Math.min.apply(null, kx.map(function (q) { return q.z; })))) : (x < P.keel[0].x || x > P.keel[P.keel.length - 1].x ? D : Math.max(0, lin(P.keel, 'x', x, 'z')[0]))); }
+      else zk.push(x < runL ? runH * Math.pow((runL - x) / runL, 2) : 0);
+    }
     var sec = o.section || null, bmx = Math.max.apply(null, b), pw = [];
     for (i = 0; i < nx; i++) {                                              // how much the section is pulled in at station i: 1 at the full part, more forward and aft
       var p = 1 + 1.5 * Math.max(0, 1 - b[i] / bmx);
@@ -823,19 +862,24 @@
     }
     for (j = 0; j < nz; j++) zs.push(r2(D * j / (nz - 1)));
     for (j = 0; j < nz; j++) {
-      var row = [];
+      var row = [], rg = P ? lin(P.rows, 'z', zs[j], 'xa', 'xf') : null;
       for (i = 0; i < nx; i++) {
-        var h = zs[j] - zk[i];
-        if (h < -1e-9 || b[i] < 0.02) { row.push(null); continue; }
+        var h = zs[j] - zk[i], fi = i, bi = b[i];
+        if (rg) {                                                         // the waterline keeps the shape of the deck outline, fitted between the ends of the profile at this height
+          if (xs[i] < rg[0] - 1e-6 || xs[i] > rg[1] + 1e-6 || rg[1] - rg[0] < 0.05 * L) { row.push(null); continue; }
+          fi = (bx0 + (xs[i] - rg[0]) * (bx1 - bx0) / Math.max(1e-6, rg[1] - rg[0])) / L * (nx - 1); bi = at(b, fi);
+          if (xs[i] >= rg[1] - 1e-6) bi = Math.min(bi, 0.02 * B);
+        }
+        if (h < -1e-9 || bi < 0.02) { row.push(null); continue; }
         var y;
-        if (sec) y = b[i] * Math.pow(Math.max(0.001, shapeAt(sec, h * D / Math.max(1e-6, D - zk[i]))), pw[i]);
+        if (sec) y = bi * Math.pow(Math.max(0.001, shapeAt(sec, h * D / Math.max(1e-6, D - zk[i]))), at(pw, fi));
         else if (o.decks && o.decks.length >= 1) {                         // several deck plans: the half-breadth goes straight from one deck to the next, under the lowest one a round bilge
-          var pts = o.decks.filter(function (d) { return d.b[i] > 0 && d.z < D; }).map(function (d) { return [d.z, Math.min(b[i], d.b[i])]; }); pts.push([D, b[i]]);
+          var pts = o.decks.filter(function (d) { return at(d.b, fi) > 0 && d.z < D; }).map(function (d) { return [d.z, Math.min(bi, at(d.b, fi))]; }); pts.push([D, bi]);
           var zz = zs[j] - zk[i];
-          if (pts.length < 2 || zz >= pts[0][0]) { y = b[i]; for (var q = 0; q + 1 < pts.length; q++) if (zz >= pts[q][0] && zz <= pts[q + 1][0]) { var t = (zz - pts[q][0]) / Math.max(1e-6, pts[q + 1][0] - pts[q][0]); y = pts[q][1] + t * (pts[q + 1][1] - pts[q][1]); break; } }
+          if (pts.length < 2 || zz >= pts[0][0]) { y = bi; for (var q = 0; q + 1 < pts.length; q++) if (zz >= pts[q][0] && zz <= pts[q + 1][0]) { var t = (zz - pts[q][0]) / Math.max(1e-6, pts[q + 1][0] - pts[q][0]); y = pts[q][1] + t * (pts[q + 1][1] - pts[q][1]); break; } }
           else { var w0 = pts[0][1], r3 = Math.min(rB, w0 * 0.9); y = h >= r3 ? w0 : (w0 - r3) + Math.sqrt(Math.max(0, r3 * r3 - (r3 - h) * (r3 - h))); }
         }
-        else { var r = Math.min(rB, b[i] * 0.9); y = h >= r ? b[i] : (b[i] - r) + Math.sqrt(Math.max(0, r * r - (r - h) * (r - h))); }
+        else { var r = Math.min(rB, bi * 0.9); y = h >= r ? bi : (bi - r) + Math.sqrt(Math.max(0, r * r - (r - h) * (r - h))); }
         row.push(r2(Math.max(0.02, y)));
       }
       half.push(row);
@@ -843,7 +887,7 @@
     var vol = 0, Tm = Math.min(T, D);                                      // block coefficient at the draught, trapezoid rule
     for (i = 0; i + 1 < nx; i++) { var a = 0, c = 0; for (j = 0; j + 1 < nz; j++) { var zm = (zs[j] + zs[j + 1]) / 2; if (zs[j + 1] <= Tm + 1e-9) { var ya = half[j][i] == null ? 0 : half[j][i], yb = half[j][i + 1] == null ? 0 : half[j][i + 1]; vol += (ya + yb) / 2 * (xs[i + 1] - xs[i]) * (zs[j + 1] - zs[j]) * 2; } } }
     var cb = vol / (L * B * Tm);
-    return { hull: { type: 'offsets', offsets: { zs: zs, xs: xs, half: half }, x: 0, y: 0, loa: r2(L), beam: r2(B), depth: r2(D), draught: r2(Math.min(D, T)) }, cb: cb, bilge: rB, rise: runH, fromSection: !!sec, fromDecks: !sec && !!(o.decks && o.decks.length >= 1), plan: xs.map(function (x, q) { return [x, r2(b[q])]; }), runL: runL, runH: runH };
+    return { hull: { type: 'offsets', offsets: { zs: zs, xs: xs, half: half }, x: 0, y: 0, loa: r2(L), beam: r2(B), depth: r2(D), draught: r2(Math.min(D, T)) }, cb: cb, bilge: rB, rise: runH, fromSection: !!sec, fromDecks: !sec && !!(o.decks && o.decks.length >= 1), fromProfile: !!P, plan: xs.map(function (x, q) { return [x, r2(b[q])]; }), runL: runL, runH: runH };
   }
 
   /* ---------- blocks from the analysis ---------- */
@@ -1235,7 +1279,7 @@
     return lines.join('\r\n') + '\r\n';
   }
 
-  var api = { parseTable: parseTable, SHAPES: SHAPES, shapeFactor: shapeFactor, shapeTris: shapeTris, shapeEdges: shapeEdges, blockTris: blockTris, hullTris: hullTris, stlBinary: stlBinary, zipStore: zipStore, smooth: smooth, curvePath: curvePath, curveFn: curveFn, hullFromContours: hullFromContours, linesFromItems: linesFromItems, parseSpec: parseSpec, frameIndex: frameIndex, sectionShape: sectionShape, titleBoxes: titleBoxes, rulerPitch: rulerPitch, frameSpacing: frameSpacing, sheetViews: sheetViews, sheetRoles: sheetRoles, titleRole: titleRole, splitRows: splitRows, splitSheet: splitSheet, dropAxisLines: dropAxisLines, splitViewsCC: splitViewsCC, guessRotationText: guessRotationText, tableBoxes: tableBoxes, parseOcrLines: parseOcrLines, textSegments: textSegments, textBlocks: textBlocks, guessHull: guessHull, segmentsFromOps: segmentsFromOps, inPage: inPage, rotateSegs: rotateSegs, splitViews: splitViews, segsIn: segsIn, runs: runs, bbox: bbox, guessRotation: guessRotation, guessUp: guessUp,
+  var api = { profileOutline: profileOutline, parseTable: parseTable, SHAPES: SHAPES, shapeFactor: shapeFactor, shapeTris: shapeTris, shapeEdges: shapeEdges, blockTris: blockTris, hullTris: hullTris, stlBinary: stlBinary, zipStore: zipStore, smooth: smooth, curvePath: curvePath, curveFn: curveFn, hullFromContours: hullFromContours, linesFromItems: linesFromItems, parseSpec: parseSpec, frameIndex: frameIndex, sectionShape: sectionShape, titleBoxes: titleBoxes, rulerPitch: rulerPitch, frameSpacing: frameSpacing, sheetViews: sheetViews, sheetRoles: sheetRoles, titleRole: titleRole, splitRows: splitRows, splitSheet: splitSheet, dropAxisLines: dropAxisLines, splitViewsCC: splitViewsCC, guessRotationText: guessRotationText, tableBoxes: tableBoxes, parseOcrLines: parseOcrLines, textSegments: textSegments, textBlocks: textBlocks, guessHull: guessHull, segmentsFromOps: segmentsFromOps, inPage: inPage, rotateSegs: rotateSegs, splitViews: splitViews, segsIn: segsIn, runs: runs, bbox: bbox, guessRotation: guessRotation, guessUp: guessUp,
     describeView: describeView, guessRoles: guessRoles, analyse: analyse, suggestTanks: suggestTanks, houseWidth: houseWidth, parseInfo: parseInfo, buildProject: buildProject, toCSV: toCSV, defaultGroups: defaultGroups, GROUP_NAMES: GROUP_NAMES, r2: r2 };
   root.GA2DBB = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
