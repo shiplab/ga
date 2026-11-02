@@ -13,7 +13,7 @@ const fonts = [['Barlow', 400, 'node_modules/@fontsource/barlow/files/barlow-lat
   ['IBM Plex Mono', 400, 'node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2'], ['IBM Plex Mono', 500, 'node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2']].map(f => fontFace(...f)).join('\n');
 const assets = { core: b64('node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js'), wk: b64('node_modules/tesseract.js/dist/worker.min.js'), lang: b64('node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz') };
 const html = `<meta charset="utf-8">
-<title>GA to DBB</title>
+<title>GA 2D extractor to DBB</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,${b64('src/ntnu.png')}">
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>

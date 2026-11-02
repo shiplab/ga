@@ -1,7 +1,7 @@
 {
   "name": "ga-to-dbb",
   "version": "1.0.0",
-  "description": "GA to DBB: from a ship general arrangement drawing (PDF, DXF, SVG or picture) to a Ship Design Building Block project. Runs in the browser, offline.",
+  "description": "GA 2D extractor to DBB: from a ship general arrangement drawing (PDF, DXF, SVG or picture) to a Ship Design Building Block project. Runs in the browser, offline.",
   "scripts": {
     "build": "node build.js",
     "pages": "node build.js --pages"

@@ -1,4 +1,4 @@
-/* GA to DBB core: reads vector line work and printed particulars from a general arrangement (GA) PDF page and suggests
+/* GA 2D extractor to DBB core: reads vector line work and printed particulars from a general arrangement (GA) PDF page and suggests
    decks, bulkheads and blocks for a DBB project. Works in node (tests) and in the browser. No dependencies.
    Coordinates: "page" coordinates are pdf.js viewport points at scale 1 (x right, y down). After rotation the drawing is
    upright: length along x with the bow to the right, height along y with the deck up. Metres: x forward from the aft end,
@@ -1171,7 +1171,7 @@
     return vol < 0 ? T.map(function (t) { return [t[0], t[2], t[1]]; }) : T;
   }
   function stlBinary(tris, name) {                                          // binary STL, metres
-    var buf = new ArrayBuffer(84 + 50 * tris.length), dv = new DataView(buf), hd = String(name || 'GA to DBB').slice(0, 79), i, p = 84;
+    var buf = new ArrayBuffer(84 + 50 * tris.length), dv = new DataView(buf), hd = String(name || 'GA 2D extractor to DBB').slice(0, 79), i, p = 84;
     for (i = 0; i < hd.length; i++) dv.setUint8(i, hd.charCodeAt(i) & 127); dv.setUint32(80, tris.length, true);
     tris.forEach(function (t) {
       var u = [t[1][0] - t[0][0], t[1][1] - t[0][1], t[1][2] - t[0][2]], w = [t[2][0] - t[0][0], t[2][1] - t[0][1], t[2][2] - t[0][2]], n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]], l = Math.hypot(n[0], n[1], n[2]) || 1, k;

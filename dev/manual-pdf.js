@@ -18,7 +18,7 @@ execFileSync('pandoc', [path.join(docs, 'manual.md'), '-f', 'markdown-smart', '-
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage(); await p.goto('file://' + tmp + '/ga-manual.html'); await p.emulateMedia({ media: 'print' });
   await p.pdf({ path: path.join(docs, 'manual.pdf'), format: 'A4', printBackground: true, displayHeaderFooter: true, margin: { top: '20mm', bottom: '20mm', left: '20mm', right: '20mm' }, outline: true, tagged: true,
-    headerTemplate: '<div style="font:7pt sans-serif;color:#6b7788;width:100%;padding:0 20mm;text-align:right">GA to DBB: Manual</div>',
+    headerTemplate: '<div style="font:7pt sans-serif;color:#6b7788;width:100%;padding:0 20mm;text-align:right">GA 2D extractor to DBB: Manual</div>',
     footerTemplate: '<div style="font:7pt sans-serif;color:#6b7788;width:100%;padding:0 20mm;display:flex;justify-content:space-between"><span>NTNU, educational use only</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>' });
   await b.close(); console.log('wrote docs/manual.pdf');
 })();

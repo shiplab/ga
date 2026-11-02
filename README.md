@@ -1,16 +1,16 @@
-# GA to DBB
+# GA 2D extractor to DBB
 
 **From a ship's general arrangement drawing to a Ship Design Building Block project.**
 
-GA to DBB reads a general arrangement (GA) drawing and turns it into a project for the Ship Design Building Block Editor (DBB). The drawing can be a vector PDF, a DXF or SVG file, or a picture (scan, JPG, PNG). The project holds blocks for the compartments, the decks, a hull and the main particulars. The app proposes; you check and correct; then you save.
+GA 2D extractor to DBB reads a general arrangement (GA) drawing and turns it into a project for the Ship Design Building Block Editor (DBB). The drawing can be a vector PDF, a DXF or SVG file, or a picture (scan, JPG, PNG). The project holds blocks for the compartments, the decks, a hull and the main particulars. The app proposes; you check and correct; then you save.
 
 It runs entirely in your web browser. The drawing is never uploaded, and the app works offline.
 
 **Open the app:** https://shiplab.github.io/ga/
 
-![GA to DBB with the tanker example: 410 blocks from 4 views](docs/img/03-opened.png)
+![GA 2D extractor to DBB with the tanker example: 410 blocks from 4 views](docs/img/03-opened.png)
 
-> **Educational use.** GA to DBB is a teaching and early-design tool. Everything it produces is an estimate read from a drawing, and it can be wrong. Do not use it for design approval, class or flag-state documents, stability or other safety-critical decisions.
+> **Educational use.** GA 2D extractor to DBB is a teaching and early-design tool. Everything it produces is an estimate read from a drawing, and it can be wrong. Do not use it for design approval, class or flag-state documents, stability or other safety-critical decisions.
 
 ## What it does
 
@@ -102,7 +102,7 @@ In the repository settings, go to Pages, choose **Deploy from a branch**, then t
 
 Developed by **Henrique Gaspar, NTNU**, 2026, to be merged into DBB.
 
-Gaspar, H.M. (2026). *GA to DBB* [Computer software]. NTNU. https://github.com/shiplab/ga
+Gaspar, H.M. (2026). *GA 2D extractor to DBB* [Computer software]. NTNU. https://github.com/shiplab/ga
 
 This work was inspired by an early attempt published in:
 
@@ -116,4 +116,4 @@ Uses [pdf.js](https://github.com/mozilla/pdf.js), [OpenCV.js](https://opencv.org
 
 ## Disclaimer
 
-GA to DBB is an educational and research tool. Its results are approximate and can be wrong. They are not a substitute for the original ship data or the judgement of a naval architect. The software is provided as it is, without warranty of any kind. The drawings you open stay on your computer and remain the property of their owners.
+GA 2D extractor to DBB is an educational and research tool. Its results are approximate and can be wrong. They are not a substitute for the original ship data or the judgement of a naval architect. The software is provided as it is, without warranty of any kind. The drawings you open stay on your computer and remain the property of their owners.

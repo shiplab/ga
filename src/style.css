@@ -1,4 +1,4 @@
-/* GA to DBB: same look as the DBB Block Editor (tokens, topbar, panels, drawer, tables) so the two can be merged later. */
+/* GA 2D extractor to DBB: same look as the DBB Block Editor (tokens, topbar, panels, drawer, tables) so the two can be merged later. */
 :root {
   --bg: #e8ecf1; --panel: #f6f8fb; --panel-2: #e9eef4; --line: #c8d1dc; --fg: #142033; --fg-dim: #566679;
   --accent: #1d4fd7; --accent-fg: #ffffff; --accent-soft: #dbe5fd;
@@ -37,6 +37,7 @@ button { cursor: pointer; }
 .projname { flex: 1 1 160px; min-width: 0; max-width: 300px; height: 30px; padding: 0 8px; font-size: 15px; font-weight: 500; background: transparent; border: 1px solid transparent; border-radius: 4px; }
 .projname:hover { border-color: var(--line); }
 .projname:focus { border-color: var(--accent); background: var(--panel); }
+@media (max-width: 1420px) { .brand { font-size: 17px; letter-spacing: 0.03em; } .projname { flex-basis: 90px; } }
 .spacer { flex: 1 1 auto; }
 .sep { width: 1px; height: 20px; background: var(--line); margin: 0 2px; }
 .btn { height: 30px; padding: 0 11px; display: inline-flex; align-items: center; gap: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-size: 13px; font-weight: 500; white-space: nowrap; }

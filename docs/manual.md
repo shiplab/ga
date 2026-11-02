@@ -1,17 +1,17 @@
 ---
-title: "GA to DBB: Manual"
+title: "GA 2D extractor to DBB: Manual"
 subtitle: "From a general arrangement drawing to a Ship Design Building Block project"
 author: "Henrique Gaspar, NTNU"
 date: "November 2026"
 ---
 
-# What GA to DBB does
+# What GA 2D extractor to DBB does
 
-**GA to DBB** reads a ship's **general arrangement (GA)**, the 2D drawing with the profile, the deck plans, the tank plan and often a midship section. It turns the drawing into a project for the **Ship Design Building Block Editor (DBB)**: blocks for the compartments, decks, a hull, and the main particulars.
+**GA 2D extractor to DBB** reads a ship's **general arrangement (GA)**, the 2D drawing with the profile, the deck plans, the tank plan and often a midship section. It turns the drawing into a project for the **Ship Design Building Block Editor (DBB)**: blocks for the compartments, decks, a hull, and the main particulars.
 
 The app proposes; you check and correct; then you save. It runs in your browser, on your computer: the drawing is not uploaded anywhere.
 
-> **Educational use.** GA to DBB is a teaching and early-design tool. Everything it produces is an *estimate read from a drawing*, and it can be wrong. Do not use it for design approval, class or flag-state documents, or safety-critical decisions. Always check the results against the source.
+> **Educational use.** GA 2D extractor to DBB is a teaching and early-design tool. Everything it produces is an *estimate read from a drawing*, and it can be wrong. Do not use it for design approval, class or flag-state documents, or safety-critical decisions. Always check the results against the source.
 
 ![The app at start. Open GA, or drop a file on the page; Examples opens one of the three example GAs.](img/01-start.png)
 
@@ -143,7 +143,7 @@ With a picture, check in this order:
 
 # The theory behind it
 
-GA to DBB does not "understand" a drawing the way a naval architect does. It combines four well-known techniques, each doing one simple thing well, and joins their results with rules from ship design. It uses no generative AI and no language model, and nothing is learned from your drawings.
+GA 2D extractor to DBB does not "understand" a drawing the way a naval architect does. It combines four well-known techniques, each doing one simple thing well, and joins their results with rules from ship design. It uses no generative AI and no language model, and nothing is learned from your drawings.
 
 ## Vector drawings: geometry, not pixels
 
@@ -333,11 +333,11 @@ For pictures, the same sheets rendered as 150 dpi images give 317 blocks for the
 
 # Educational use and disclaimer
 
-GA to DBB is an **educational and research tool**, made for teaching ship design at NTNU and for early-stage concept work. Its results are approximate and can be wrong. They are not a substitute for the original ship data, class or flag-state documents, or the judgement of a naval architect. They **must not** be used for design approval, certification, stability or other safety-critical decisions. The software is provided as it is, without warranty of any kind; NTNU and the author accept no liability for its use.
+GA 2D extractor to DBB is an **educational and research tool**, made for teaching ship design at NTNU and for early-stage concept work. Its results are approximate and can be wrong. They are not a substitute for the original ship data, class or flag-state documents, or the judgement of a naval architect. They **must not** be used for design approval, certification, stability or other safety-critical decisions. The software is provided as it is, without warranty of any kind; NTNU and the author accept no liability for its use.
 
 # Credits
 
-Developed by Henrique Gaspar, NTNU, 2026, to be merged into DBB. Citing: Gaspar, H.M. (2026). *GA to DBB* [Computer software]. NTNU.
+Developed by Henrique Gaspar, NTNU, 2026, to be merged into DBB. Citing: Gaspar, H.M. (2026). *GA 2D extractor to DBB* [Computer software]. NTNU.
 
 ## Earlier work
 
